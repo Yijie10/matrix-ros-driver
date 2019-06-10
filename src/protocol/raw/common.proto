@@ -1,0 +1,559 @@
+// See README.txt for information and build instructions.
+//
+// Note: START and END tags are used in comments to define sections used in
+// tutorials.  They are not part of the syntax for Protocol Buffers.
+//
+// To get an in-depth walkthrough of this file and the related examples, see:
+// https://developers.google.com/protocol-buffers/docs/tutorials
+
+// [START declaration]
+syntax = "proto2";
+package CommonProto;
+// [END declaration]
+
+// [START messages]
+
+message Point {
+  required float x = 1;
+  required float y = 2;
+  optional float z = 3;
+}
+
+message PointI {
+  required int32 x = 1;
+  required int32 y = 2;
+  optional int32 z = 3;
+}
+
+message Contour {
+  repeated Point pts = 1;
+}
+
+message Polygon {
+  repeated Point pts = 1;
+}
+
+message Rect {
+  required float left = 1;
+  required float top = 2;
+  required float right = 3;
+  required float bottom = 4;
+}
+
+// oriented bounding box
+message OBBox2D {
+  required Point corner = 1;
+  repeated Point axes_pts = 2;  // 2 points(plus corner) to describe obb
+  repeated float size = 3;      // relative "sizes" of axes  
+}
+
+message Box3D {
+  required Point lower_lt = 1;
+  required Point lower_lb = 2;
+  required Point lower_rb = 3;
+  required Point lower_rt = 4;
+  required Point upper_lt = 5;
+  required Point upper_lb = 6;
+  required Point upper_rb = 7;
+  required Point upper_rt = 8;
+}
+
+enum SkeletonType {
+  SkeletonType_nose = 0;
+  SkeletonType_left_eye = 1;
+  SkeletonType_right_eye = 2;
+  SkeletonType_left_ear = 3;
+  SkeletonType_right_ear = 4;
+  SkeletonType_left_shoulder = 5;
+  SkeletonType_right_shoulder = 6;
+  SkeletonType_left_elbow = 7;
+  SkeletonType_right_elbow = 8;
+  SkeletonType_left_wrist = 9;
+  SkeletonType_right_wrist = 10;
+  SkeletonType_left_hip = 11;
+  SkeletonType_right_hip = 12;
+  SkeletonType_left_knee = 13;
+  SkeletonType_right_knee = 14;
+  SkeletonType_left_ankle = 15;
+  SkeletonType_right_ankle = 16;
+}
+
+message SkeletonPoint {
+  required Point pt = 1;
+  required int32 valid = 2;
+}
+
+enum ImageFormat{
+  GRAY = 0;
+  YV12 = 1;
+  JPEG = 2;
+  PNG = 3;
+  CR12 = 4;
+  BAD = 5;
+  NV12 = 6;
+  NV21 = 7;
+  TIMEOUT = 8;
+}
+
+enum ParsingFormat {
+  ParsingFormat_Raw = 0;
+  ParsingFormat_Label = 1;
+  ParsingFormat_Label_RLE = 2;
+}
+
+message Image {
+  required int32 width = 1;
+  required int32 height = 2;
+  required int32 channel = 3;
+  optional int64 time_stamp = 4;
+  optional int32 send_mode = 5;
+  optional int32 format = 6;
+  optional int32 index = 7;
+  optional int32 count = 8;
+  optional int32 depth = 9;
+  optional int32 align = 10;
+}
+
+message Velocity {
+  required float vx = 1;
+  required float vy = 2;
+  optional float vz = 3;
+}
+
+enum LineType {
+  LINE_RAW = 0;     // perception line
+  LINE_LEFT = 1;    // Road Model Left
+  LINE_RIGHT = 2;   // Road Model Right
+  LINE_LEFT_LEFT = 4;    // Road Model Left Left
+  LINE_RIGHT_RIGHT = 8;  // Road Model Right Right
+
+  LINE_DASH = 1024;     // Property Dash
+  LINE_SOLID = 2048;    // Property Solid
+
+  LINE_WHITE = 4096;    // Color White
+  LINE_YELLOW = 8192;   // Color Yellow
+  LINE_BLUE = 16384;    // Color Blue
+
+  LINE_FENCE = 65536;   // 1 << 16, for fence
+                        // and road boundary(side walk, Terran, etc)
+}
+
+// each line is in form of quadratic equation
+// that is, y = f(x) = coeffs[0] + x * coeff[1] + x^2 * coeff[2] + x^3 * coeff[3]
+// in other word, x = (Intercept = coeffs[0])
+//                  + (Slop = coeffs[1]) * x
+//                  + (Curvature = coeffs[2] / 2) * x^2
+//                  + (curvature Variation = coeffs[3] / 6) * x^3
+// and, radius of curvrature at f(0) = ((1 + Slop^2)^(3/2)) / fabs(Curvature)
+message Line {
+  required int32 id = 1;
+  optional int32 life_time = 3;
+  // coeffs is parameter of quadratic equation
+  repeated float coeffs = 7;
+  enum EndPointType{
+    EndPointType_Far = 0;
+    EndPointType_Near = 1;
+  }
+  // end_points is lane's start and end points
+  repeated Point end_points = 8;
+  optional int32 type = 9;   // LineType
+  optional int32 source = 10;  // source is reserved
+  repeated Contour contours = 11;   // will be Deprecated
+  optional float dist_to_front_wheel = 12;
+  optional float width = 13;
+}
+
+message Lines {
+  optional int32 cam_id = 1;
+  repeated Line lines = 2;
+}
+
+enum ObstacleType{
+  ObstacleType_VehicleRear = 0;
+  ObstacleType_VehicleFull = 1;
+  ObstacleType_Pedestrian = 2;
+  ObstacleType_TrafficSign = 3;
+  ObstacleType_TrafficLight = 4;
+  ObstacleType_ParkingSlot = 5;
+  ObstacleType_RoadSign = 6;
+}
+
+enum TrafficLightStyle {
+  TrafficLightStyle_Unknown = 0;
+  TrafficLightStyle_Other = 1;
+  TrafficLightStyle_Left = 2;
+  TrafficLightStyle_Forward = 3;
+  TrafficLightStyle_Right = 4;
+  TrafficLightStyle_Rect = 5;
+  TrafficLightStyle_X = 6;
+  TrafficLightStyle_Non_Motor = 7;
+  TrafficLightStyle_Return = 8;
+  TrafficLightStyle_Pedestrain = 9;
+  TrafficLightStyle_Time = 10;
+  TrafficLightStyle_Circle = 11;
+  TrafficLightStyle_Left_And_Return = 12;
+}
+
+enum TrafficLightStatus {
+  TrafficLightStatus_Off = 0;
+  TrafficLightStatus_Red = 1;
+  TrafficLightStatus_Green = 2;
+  TrafficLightStatus_Yellow = 3;
+  TrafficLightStatus_Other = 4;
+}
+
+enum TrafficSignType {
+  TrSignType_I_Circle = 0;
+  TrSignType_I_Forward = 1;
+  TrSignType_I_Forward_Left = 2;
+  TrSignType_I_Forward_Left_Stereo = 3;
+  TrSignType_I_Forward_Right = 4;
+  TrSignType_I_Forward_Right_Stereo = 5;
+  TrSignType_I_Honk = 6;
+  TrSignType_I_Left = 7;
+  TrSignType_I_Left_Right = 8;
+  TrSignType_I_Left_Turn = 9;
+  TrSignType_I_Min_Speed_Lim100 = 10;
+  TrSignType_I_Min_Speed_Lim110 = 11;
+  TrSignType_I_Min_Speed_Lim50 = 12;
+  TrSignType_I_Min_Speed_Lim60 = 13;
+  TrSignType_I_Min_Speed_Lim70 = 14;
+  TrSignType_I_Min_Speed_Lim80 = 15;
+  TrSignType_I_Min_Speed_Lim90 = 16;
+  TrSignType_I_Motors = 17;
+  TrSignType_I_Non_Motors = 18;
+  TrSignType_I_Pedestrian_Cross = 19;
+  TrSignType_I_Right = 20;
+  TrSignType_I_Right_Turn = 21;
+  TrSignType_I_Walk = 22;
+  TrSignType_P_Custom = 23;
+  TrSignType_P_Give_Way = 24;
+  TrSignType_P_Height_Lim = 25;
+  TrSignType_P_No_Animal_Vehicle = 26;
+  TrSignType_P_No_Bus = 27;
+  TrSignType_P_No_Car = 28;
+  TrSignType_P_No_Cargo_Tricycle = 29;
+  TrSignType_P_No_Dangerous = 30;
+  TrSignType_P_No_Entry = 31;
+  TrSignType_P_No_Forward_Left = 32;
+  TrSignType_P_No_Forward_Right = 33;
+  TrSignType_P_No_Foward = 34;
+  TrSignType_P_No_Horning = 35;
+  TrSignType_P_No_Human = 36;
+  TrSignType_P_No_Human_Cargo_Triangle = 37;
+  TrSignType_P_No_Human_Passenger_Triangle = 38;
+  TrSignType_P_No_Human_Vehicle = 39;
+  TrSignType_P_No_Left_Right_Turn = 40;
+  TrSignType_P_No_Left_Turn = 41;
+  TrSignType_P_No_Long_Parking = 42;
+  TrSignType_P_No_Moto_Tricycle = 43;
+  TrSignType_P_No_Motor = 44;
+  TrSignType_P_No_Motorcycle = 45;
+  TrSignType_P_No_Non_Motor = 46;
+  TrSignType_P_No_Parking = 47;
+  TrSignType_P_No_Passing = 48;
+  TrSignType_P_No_Return = 49;
+  TrSignType_P_No_Right_Turn = 50;
+  TrSignType_P_No_Tractor = 51;
+  TrSignType_P_No_Trailer = 52;
+  TrSignType_P_No_Truck = 53;
+  TrSignType_P_Noway = 54;
+  TrSignType_P_Parking_Check = 55;
+  TrSignType_P_Slow_For = 56;
+  TrSignType_P_Speed_Lim10 = 57;
+  TrSignType_P_Speed_Lim100 = 58;
+  TrSignType_P_Speed_Lim105 = 59;
+  TrSignType_P_Speed_Lim110 = 60;
+  TrSignType_P_Speed_Lim115 = 61;
+  TrSignType_P_Speed_Lim120 = 62;
+  TrSignType_P_Speed_Lim15 = 63;
+  TrSignType_P_Speed_Lim20 = 64;
+  TrSignType_P_Speed_Lim25 = 65;
+  TrSignType_P_Speed_Lim30 = 66;
+  TrSignType_P_Speed_Lim35 = 67;
+  TrSignType_P_Speed_Lim40 = 68;
+  TrSignType_P_Speed_Lim45 = 69;
+  TrSignType_P_Speed_Lim5 = 70;
+  TrSignType_P_Speed_Lim50 = 71;
+  TrSignType_P_Speed_Lim55 = 72;
+  TrSignType_P_Speed_Lim60 = 73;
+  TrSignType_P_Speed_Lim65 = 74;
+  TrSignType_P_Speed_Lim70 = 75;
+  TrSignType_P_Speed_Lim75 = 76;
+  TrSignType_P_Speed_Lim80 = 77;
+  TrSignType_P_Speed_Lim85 = 78;
+  TrSignType_P_Speed_Lim90 = 79;
+  TrSignType_P_Speed_Lim95 = 80;
+  TrSignType_P_Speed_Lim_Rev10 = 81;
+  TrSignType_P_Speed_Lim_Rev100 = 82;
+  TrSignType_P_Speed_Lim_Rev105 = 83;
+  TrSignType_P_Speed_Lim_Rev110 = 84;
+  TrSignType_P_Speed_Lim_Rev115 = 85;
+  TrSignType_P_Speed_Lim_Rev120 = 86;
+  TrSignType_P_Speed_Lim_Rev15 = 87;
+  TrSignType_P_Speed_Lim_Rev20 = 88;
+  TrSignType_P_Speed_Lim_Rev25 = 89;
+  TrSignType_P_Speed_Lim_Rev30 = 90;
+  TrSignType_P_Speed_Lim_Rev35 = 91;
+  TrSignType_P_Speed_Lim_Rev40 = 92;
+  TrSignType_P_Speed_Lim_Rev45 = 93;
+  TrSignType_P_Speed_Lim_Rev5 = 94;
+  TrSignType_P_Speed_Lim_Rev50 = 95;
+  TrSignType_P_Speed_Lim_Rev55 = 96;
+  TrSignType_P_Speed_Lim_Rev60 = 97;
+  TrSignType_P_Speed_Lim_Rev65 = 98;
+  TrSignType_P_Speed_Lim_Rev70 = 99;
+  TrSignType_P_Speed_Lim_Rev75 = 100;
+  TrSignType_P_Speed_Lim_Rev80 = 101;
+  TrSignType_P_Speed_Lim_Rev85 = 102;
+  TrSignType_P_Speed_Lim_Rev90 = 103;
+  TrSignType_P_Speed_Lim_Rev95 = 104;
+  TrSignType_P_Stop_For = 105;
+  TrSignType_P_Weight_Lim = 106;
+  TrSignType_P_Weight_Lim_wheel = 107;
+  TrSignType_P_Width_Lim = 108;
+  TrSignType_W_Accident_Prone = 109;
+  TrSignType_W_Animal = 110;
+  TrSignType_W_Bad_Weather = 111;
+  TrSignType_W_Bump = 112;
+  TrSignType_W_Bumpy = 113;
+  TrSignType_W_Children = 114;
+  TrSignType_W_Circle = 115;
+  TrSignType_W_Continuous_Down = 116;
+  TrSignType_W_Continuous_Turn = 117;
+  TrSignType_W_Cross = 118;
+  TrSignType_W_Cross_Intersection = 119;
+  TrSignType_W_Cycle = 120;
+  TrSignType_W_Dam_Left = 121;
+  TrSignType_W_Dam_Right = 122;
+  TrSignType_W_Danger = 123;
+  TrSignType_W_Detour_Around = 124;
+  TrSignType_W_Detour_Left = 125;
+  TrSignType_W_Detour_Right = 126;
+  TrSignType_W_Disabled = 127;
+  TrSignType_W_Domestic = 128;
+  TrSignType_W_Down = 129;
+  TrSignType_W_Ferry = 130;
+  TrSignType_W_Fog = 131;
+  TrSignType_W_Ford = 132;
+  TrSignType_W_Guarded_Railway = 133;
+  TrSignType_W_Hump_Bridge = 134;
+  TrSignType_W_Ice = 135;
+  TrSignType_W_Keep_Distance = 136;
+  TrSignType_W_LR_Narrow = 137;
+  TrSignType_W_LR_Turn = 138;
+  TrSignType_W_Left_Falling = 139;
+  TrSignType_W_Left_Narrow = 140;
+  TrSignType_W_Left_Turn = 141;
+  TrSignType_W_Low_Lying = 142;
+  TrSignType_W_Merge_Left = 143;
+  TrSignType_W_Merge_Right = 144;
+  TrSignType_W_Mount_Left = 145;
+  TrSignType_W_Mount_Right = 146;
+  TrSignType_W_Narrow_Bridge = 147;
+  TrSignType_W_Pedestrain = 148;
+  TrSignType_W_RL_Turn = 149;
+  TrSignType_W_Railway = 150;
+  TrSignType_W_Rain = 151;
+  TrSignType_W_Right_Falling = 152;
+  TrSignType_W_Right_Narrow = 153;
+  TrSignType_W_Right_Turn = 154;
+  TrSignType_W_Side_Wind = 155;
+  TrSignType_W_Slip = 156;
+  TrSignType_W_Slow = 157;
+  TrSignType_W_T_Intersection = 158;
+  TrSignType_W_T_Shap = 159;
+  TrSignType_W_T_Shap_Left = 160;
+  TrSignType_W_T_Shap_Right = 161;
+  TrSignType_W_T_Shaps = 162;
+  TrSignType_W_Tidal = 163;
+  TrSignType_W_Traffic_Light = 164;
+  TrSignType_W_Tunnel = 165;
+  TrSignType_W_Tunnel_Headlight = 166;
+  TrSignType_W_Two_Way = 167;
+  TrSignType_W_Up = 168;
+  TrSignType_W_Vehicle_Queue = 169;
+  TrSignType_W_Village = 170;
+  TrSignType_W_Working = 171;
+  TrSignType_W_YB_Left = 172;
+  TrSignType_W_YB_Right = 173;
+  TrSignType_W_Y_Left = 174;
+  TrSignType_W_Y_Right = 175;
+}
+
+enum ParkingSlotStatus {
+  ParkingSlotStatus_Occupied = 0;
+  ParkingSlotStatus_Free = 1;
+}
+
+message WorldSpaceInfo {
+  optional float yaw = 1;         // rad
+  optional Velocity vel = 2;      // m/s
+  optional float length = 3;      // m
+  optional float width = 4;       // m
+  optional float height = 5;      // m
+  optional Polygon poly = 6;      // polygon points
+  optional Point position = 7;    // position in vcs
+  optional int32 traversable = 8;
+  optional float hmw = 9;
+  optional float ttc = 10;
+  optional int32 curr_lane = 11;
+}
+
+message ImageSpaceInfo {
+  optional Rect rect = 1;
+  
+  optional Skeleton skeleton = 10;
+  optional Box3D box = 11;
+}
+
+message Obstacle {
+  required int32 id = 1;
+  required int32 type = 2;      // ObstacleType
+  optional int32 conf = 3;       // confidence, 0~100
+  optional int32 life_time = 4; // ms
+  optional int32 age = 5;       // frame count
+  
+  optional ImageSpaceInfo img_info = 6;
+  optional WorldSpaceInfo world_info = 7;
+  repeated int32 property = 13; // e.g. traffic light/sign properties(light status/sign types)
+}
+
+message Obstacles {
+  optional int32 cam_id = 1;
+  repeated Obstacle obstacle = 2;
+  optional float conf_scale = 3 [default = 0.1];  // confidence value scale factor
+}
+
+enum ObstacleRawModelType {
+  ObstacleRawModel_Car = 0;
+  ObstacleRawModel_FullCar = 1;
+  ObstacleRawModel_Ped = 2;
+  ObstacleRawModel_Head = 3;
+  ObstacleRawModel_Rare = 4;
+  ObstacleRawModel_TrafficSign = 5;
+  ObstacleRawModel_TrafficLight = 6;
+  ObstacleRawModel_Lane = 7;
+  ObstacleRawModel_RoadSign = 10;
+}
+
+message ObstacleRaw {
+  required Rect rect = 1;
+  required float conf = 2;
+  required int32 model = 3;
+  optional int32 source = 4;
+  repeated int32 property = 6;
+}
+message ObstacleRaws {
+  optional int32 cam_id = 1;
+  repeated ObstacleRaw obstacle = 2;
+  optional float conf_scale = 3 [default = 0.1];  // confidence value scale factor
+}
+
+enum LanePosition {
+  LANE_POSITION_CENTER = 0;
+  LANE_POSITION_LEFT = 1;  
+  LANE_POSITION_RIGHT = 2;
+}
+
+enum FreeSpacePointType {
+  ParsingLabelType_Invalid = 255;
+}
+
+message FreeSpacePoints {
+  repeated int32 property = 3;     // for each fov ray point
+                                   // describe what kind of obstacle stops fov ray
+  optional int32 cam_id = 4;       //
+  repeated Point pts_vcs = 5;      // position in vcs
+  repeated Point pts_img = 6;      // position in image
+}
+
+message Box3DRaw {
+  required ObstacleRaw percept = 1;
+  required Box3D box = 2;
+}
+
+message Box3DRaws {
+  optional int32 cam_id = 1;
+  repeated Box3DRaw box_3d = 2;
+}
+
+message Skeleton {
+  optional int32 id = 1;
+  repeated SkeletonPoint skeleton = 2;
+}
+
+message SkeletonRaw {
+  required ObstacleRaw percept = 1;
+  repeated SkeletonPoint skeleton = 2;
+}
+
+message SkeletonRaws {
+  optional int32 cam_id = 1;
+  repeated SkeletonRaw skeleton_raw = 2;
+}
+
+// we can reproduct a 3x3 Matrix(and its inverse)
+// convert points between image space and ground space
+message CameraMatrix {
+  repeated float mat_gnd2img = 1;  // 3x3
+  repeated float mat_img2gnd = 2;  // 3x3
+  repeated float mat_vcsgnd2img = 3;  // 3x3
+  repeated float mat_img2vcsgnd = 4;  // 3x3
+}
+
+message DistortParam {
+  repeated float param = 1;
+}
+message VCSParam {
+  repeated float rotation = 1;     // rotation relative to x, y, z axis
+  repeated float translation = 2;  // translation
+}
+
+enum CameraType {
+  CameraType_PinHole = 0;
+  CameraType_FishEye = 1;
+}
+
+// Camera Parameters
+message CameraParam {
+  required float focal_u = 1;
+  required float focal_v = 2;
+  required float center_u = 3;
+  required float center_v = 4;
+  required float camera_x = 5;
+  required float camera_y = 6;
+  required float camera_z = 7;
+  required float pitch = 8;
+  required float yaw = 9;
+  required float roll = 10;
+  
+  optional int32 type = 11 [default = 0];
+  optional float fov = 12;
+  
+  optional DistortParam distort = 20;
+  optional VCSParam vcs = 21; 
+  
+  optional CameraMatrix mat = 30;
+}
+
+message MotionFrame {  
+  required float speed = 1;          // km/h, vehicle speed
+  optional float acc = 2;            // m/s^2, acceleration in vehicle forward direction
+  required float yaw_rate = 3;       // rad/s, yaw rate in side direction
+                                     // (vehicle right side is positive)
+  required int64 time_stamp = 4;
+  optional float turning_radius = 5; // unit:m  +: turn right; -: turn left
+  optional bool is_stable = 6;
+}
+
+message OdometryFrame {
+  required float x = 1;
+  required float y = 2;
+  required float yaw = 3;
+  required float speed = 4;
+  required float yaw_rate = 5;
+  required int64 time_stamp = 6;
+}
+
+// [END messages]
